@@ -1436,36 +1436,229 @@ body {
   overflow-anchor: none;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .app-shell {
-    padding: 8px 10px 18px;
+    padding: 6px 8px 16px;
+    gap: 6px;
   }
+
+  /* Выносим элементы шапки и рабочей области в единую вертикальную колонку для перестановки */
+  .topbar,
+  .workspace {
+    display: contents;
+  }
+
+  /* 1. Надпись чей ход — в самом верху экрана над доской */
+  .status-pill {
+    order: 1;
+    width: 100%;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 2. Шахматная доска с карточками игроков — сразу под надписью хода */
+  .board-stage {
+    order: 2;
+    width: 100%;
+    gap: 0;
+  }
+
   .eval-bar-wrap {
     display: none;
   }
-  .setup-grid {
-    grid-template-columns: 1fr;
+
+  .board-column {
+    gap: 4px;
   }
-  .topbar {
-    padding: 10px;
+
+  .board-wrapper {
+    width: min(100%, 40vh);
+    width: min(100%, 40dvh);
+    margin: 0 auto;
+    border-width: 2px;
   }
-  .status-pill {
-    width: 100%;
-    white-space: nowrap;
+
+  .player-card {
+    min-height: 32px;
+    padding: 4px 8px;
+    border-radius: 9px;
+  }
+
+  .player-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+  }
+
+  .player-meta {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
+
   .player-name-row {
     flex-wrap: nowrap;
+    gap: 5px;
     overflow: hidden;
   }
+
   .player-name {
+    font-size: 0.78rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .player-badge {
+    font-size: 0.64rem;
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+
   .captured-row {
-    height: 18px;
+    min-height: 0;
+    height: 16px;
     overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .captured-pieces .mini-piece {
+    width: 13px;
+    height: 13px;
+  }
+
+  .clock-box {
+    font-size: 0.86rem;
+    padding: 3px 8px;
+    min-width: 56px;
+  }
+
+  /* 3. Чат и онлайн-панель — сразу под доской, полностью видны без скролла на iPhone 10-16 */
+  .side-panel {
+    order: 3;
+    gap: 8px;
+  }
+
+  .online-card {
+    padding: 7px 9px;
+    gap: 5px;
+    border-radius: 12px;
+  }
+
+  .online-card.active-session .card-header {
+    display: none;
+  }
+
+  .online-card .card-header h3 {
+    font-size: 0.82rem;
+  }
+
+  .online-section {
+    gap: 5px;
+  }
+
+  .room-header-bar {
+    padding: 3px 8px;
+  }
+
+  .room-code-pill {
+    font-size: 0.82rem;
+  }
+
+  .invite-box {
+    padding: 3px 5px;
+    gap: 0;
+  }
+
+  .invite-caption {
+    display: none;
+  }
+
+  #inviteUrlInput {
+    padding: 4px 7px;
+    font-size: 0.72rem;
+  }
+
+  #copyInviteBtn {
+    padding: 4px 9px;
+    font-size: 0.72rem;
+  }
+
+  .online-room-actions .action-btn {
+    padding: 4px 8px;
+    font-size: 0.73rem;
+    min-width: 92px;
+  }
+
+  .chat-box {
+    padding: 5px;
+    gap: 4px;
+  }
+
+  .chat-messages {
+    height: 68px;
+    height: clamp(62px, 10dvh, 102px);
+    font-size: 0.75rem;
+  }
+
+  .quick-reactions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .quick-reactions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .react-chip {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Размер шрифта 16px предотвращает автозум экрана в iOS Safari при вводе текста */
+  .chat-input-row input,
+  #onlineNameInput,
+  #joinRoomCodeInput {
+    font-size: 16px;
+  }
+
+  .chat-input-row input {
+    padding: 4px 8px;
+    height: 30px;
+  }
+
+  .chat-input-row button {
+    padding: 4px 12px;
+    height: 30px;
+  }
+
+  /* 4. Кнопки управления и бренд — ниже чата */
+  .topbar-actions {
+    order: 4;
+    justify-content: center;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .brand {
+    order: 5;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+
+  .setup-grid {
+    grid-template-columns: 1fr;
   }
 }
