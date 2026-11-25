@@ -498,8 +498,33 @@ function sqToCoordsPercent(sq) {
   };
 }
 
-// Отрисовка шахматной доски
+// Инициализация 64 клеток доски один раз, чтобы при ходах и кликах DOM не пересоздавался и доска не дёргалась
+const boardCells = [];
+function ensureBoardCells() {
+  if (boardCells.length === 64) return;
+  boardEl.innerHTML = '';
+  for (let vIdx = 0; vIdx < 64; vIdx++) {
+    const sqEl = document.createElement('div');
+    const rankSpan = document.createElement('span');
+    rankSpan.className = 'coord-rank hidden';
+    const fileSpan = document.createElement('span');
+    fileSpan.className = 'coord-file hidden';
+    const pieceDiv = document.createElement('div');
+    pieceDiv.className = 'piece hidden';
+    pieceDiv.dataset.piece = '0';
+
+    sqEl.appendChild(rankSpan);
+    sqEl.appendChild(fileSpan);
+    sqEl.appendChild(pieceDiv);
+    boardEl.appendChild(sqEl);
+    boardCells.push({ sqEl, rankSpan, fileSpan, pieceDiv });
+  }
+}
+
+// Отрисовка шахматной доски без пересоздания DOM-элементов
 function renderBoard() {
+  ensureBoardCells();
+
   const dispEngine = getDisplayedEngine();
   const snap = state.timeline[state.viewPly];
   const lastMove = snap ? snap.lastMove : null;
@@ -515,7 +540,6 @@ function renderBoard() {
     }
   }
 
-  boardEl.innerHTML = '';
   const files = 'abcdefgh';
   const ranks = '87654321';
 
@@ -525,57 +549,69 @@ function renderBoard() {
     const sq = visualIdxToSq(vIdx);
     const r = sq >> 3;
     const c = sq & 7;
+    const cell = boardCells[vIdx];
+    const { sqEl, rankSpan, fileSpan, pieceDiv } = cell;
 
-    const sqEl = document.createElement('div');
     const isLight = ((r + c) & 1) === 0;
-    sqEl.className = `square ${isLight ? 'light' : 'dark'}`;
-    sqEl.dataset.sq = String(sq);
+    const classes = ['square', isLight ? 'light' : 'dark'];
 
     if (lastMove && (sq === lastMove.from || sq === lastMove.to)) {
-      sqEl.classList.add('last-move');
+      classes.push('last-move');
     }
     if (isLiveView() && sq === state.selectedSq) {
-      sqEl.classList.add('selected');
+      classes.push('selected');
     }
     if (state.userMarkedSquares.has(sq)) {
-      sqEl.classList.add('user-marked');
+      classes.push('user-marked');
     }
     if (sq === checkedKingSq) {
-      sqEl.classList.add('in-check');
+      classes.push('in-check');
     }
 
     const legalMove = legalTargets.get(sq);
     if (legalMove) {
       const isCap = dispEngine.board[sq] !== EMPTY || legalMove.flags === FLAG_EN_PASSANT;
-      sqEl.classList.add(isCap ? 'legal-capture' : 'legal-move');
+      classes.push(isCap ? 'legal-capture' : 'legal-move');
     }
 
-    // Координаты на крайних полях
-    if (vc === 0) {
-      const rankSpan = document.createElement('span');
-      rankSpan.className = 'coord-rank';
-      rankSpan.textContent = ranks[r];
-      sqEl.appendChild(rankSpan);
+    const nextClassName = classes.join(' ');
+    if (sqEl.className !== nextClassName) {
+      sqEl.className = nextClassName;
     }
+    sqEl.dataset.sq = String(sq);
+
+    if (vc === 0) {
+      rankSpan.textContent = ranks[r];
+      rankSpan.classList.remove('hidden');
+    } else {
+      rankSpan.classList.add('hidden');
+    }
+
     if (vr === 7) {
-      const fileSpan = document.createElement('span');
-      fileSpan.className = 'coord-file';
       fileSpan.textContent = files[c];
-      sqEl.appendChild(fileSpan);
+      fileSpan.classList.remove('hidden');
+    } else {
+      fileSpan.classList.add('hidden');
     }
 
     const pieceCode = dispEngine.board[sq];
+    const pieceStr = String(pieceCode);
     if (pieceCode !== EMPTY) {
-      const pieceDiv = document.createElement('div');
-      pieceDiv.className = 'piece';
-      if (state.drag.active && state.drag.moved && state.drag.fromSq === sq) {
-        pieceDiv.classList.add('dragging-source');
+      if (pieceDiv.dataset.piece !== pieceStr) {
+        pieceDiv.dataset.piece = pieceStr;
+        pieceDiv.innerHTML = getPieceSvg(pieceCode);
       }
-      pieceDiv.innerHTML = getPieceSvg(pieceCode);
-      sqEl.appendChild(pieceDiv);
+      pieceDiv.classList.remove('hidden');
+      const isDragSrc = state.drag.active && state.drag.moved && state.drag.fromSq === sq;
+      pieceDiv.classList.toggle('dragging-source', isDragSrc);
+    } else {
+      if (pieceDiv.dataset.piece !== '0') {
+        pieceDiv.dataset.piece = '0';
+        pieceDiv.innerHTML = '';
+      }
+      pieceDiv.classList.add('hidden');
+      pieceDiv.classList.remove('dragging-source');
     }
-
-    boardEl.appendChild(sqEl);
   }
 
   renderOverlayArrows();
@@ -1293,13 +1329,22 @@ boardEl.addEventListener('pointermove', (e) => {
     const piece = state.engine.board[state.drag.fromSq];
     dragGhost.innerHTML = getPieceSvg(piece);
     dragGhost.classList.remove('hidden');
-    renderBoard();
+    const srcCell = boardCells.find((c) => c.sqEl.dataset.sq === String(state.drag.fromSq));
+    if (srcCell) srcCell.pieceDiv.classList.add('dragging-source');
   }
 
   if (state.drag.moved) {
     dragGhost.style.left = `${e.clientX}px`;
     dragGhost.style.top = `${e.clientY}px`;
   }
+});
+
+boardEl.addEventListener('pointercancel', (e) => {
+  if (!state.drag.active || e.pointerId !== state.drag.pointerId) return;
+  state.drag.active = false;
+  state.drag.moved = false;
+  dragGhost.classList.add('hidden');
+  renderBoard();
 });
 
 boardEl.addEventListener('pointerup', (e) => {
